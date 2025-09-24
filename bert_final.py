@@ -139,28 +139,79 @@ def extract_mdna_text(raw_text: str) -> str:
 # ---------- BERTopic wrapper ----------
 # Now handles small input sizes gracefully.. currently always returns dict for topic_labels..
 
+# def run_bertopic(sentences, n_neighbors=5, n_components=2, min_dist=0.1):
+#     if not sentences:
+#         return None
+    
+#     n_points = len(sentences)
+
+#     # Case 1: Only one sentence → assign topic 0 directly
+#     if n_points == 1:
+#         return {
+#             "topic_ids": [0],
+#             "topic_labels": {0: "SingleSentence"}   # dictionary now
+#         }
+
+#     # Case 2: Only two sentences → assign simple topics directly
+#     if n_points == 2:
+#         return {
+#             "topic_ids": [0, 1],
+#             "topic_labels": {0: "Topic0", 1: "Topic1"}  # dictionary now
+#         }
+
+#     # Case 3: Normal case → Run BERTopic safely
+#     n_neighbors = max(2, min(n_neighbors, n_points - 1))  # Ensure >= 2
+#     min_cluster_size = min(2, n_points)
+#     min_samples = min(1, n_points)
+
+#     umap_model = UMAP(
+#         n_neighbors=n_neighbors,
+#         n_components=n_components,
+#         min_dist=min_dist,
+#         random_state=42
+#     )
+    
+#     hdbscan_model = hdbscan.HDBSCAN(
+#         min_cluster_size=min_cluster_size,
+#         min_samples=min_samples,
+#         prediction_data=True
+#     )
+    
+#     model = BERTopic(
+#         umap_model=umap_model,
+#         hdbscan_model=hdbscan_model,
+#         verbose=True
+#     )
+
+#     topics, probs = model.fit_transform(sentences)
+#     topic_info = model.get_topic_info()
+
+#     topic_map = {
+#         row["Topic"]: " ".join([w for w, _ in model.get_topic(row["Topic"])])
+#         for _, row in topic_info.iterrows() if row["Topic"] != -1
+#     }
+
+#     topic_labels = {tid: topic_map.get(tid, "Misc") for tid in set(topics)}
+
+#     return {
+#         "topic_ids": topics,
+#         "topic_labels": topic_labels  # always dictionary
+#     }
+
 def run_bertopic(sentences, n_neighbors=5, n_components=2, min_dist=0.1):
     if not sentences:
         return None
     
     n_points = len(sentences)
 
-    # Case 1: Only one sentence → assign topic 0 directly
-    if n_points == 1:
+    # Bypass BERTopic for very small datasets
+    if n_points < 5:
         return {
-            "topic_ids": [0],
-            "topic_labels": {0: "SingleSentence"}   # dictionary now
+            "topic_ids": list(range(n_points)),
+            "topic_labels": {i: f"Topic{i}" for i in range(n_points)}
         }
 
-    # Case 2: Only two sentences → assign simple topics directly
-    if n_points == 2:
-        return {
-            "topic_ids": [0, 1],
-            "topic_labels": {0: "Topic0", 1: "Topic1"}  # dictionary now
-        }
-
-    # Case 3: Normal case → Run BERTopic safely
-    n_neighbors = max(2, min(n_neighbors, n_points - 1))  # Ensure >= 2
+    n_neighbors = max(2, min(n_neighbors, n_points - 1))
     min_cluster_size = min(2, n_points)
     min_samples = min(1, n_points)
 
@@ -168,7 +219,9 @@ def run_bertopic(sentences, n_neighbors=5, n_components=2, min_dist=0.1):
         n_neighbors=n_neighbors,
         n_components=n_components,
         min_dist=min_dist,
-        random_state=42
+        random_state=42,
+        metric="cosine",
+        force_approximation_algorithm=True
     )
     
     hdbscan_model = hdbscan.HDBSCAN(
@@ -195,7 +248,7 @@ def run_bertopic(sentences, n_neighbors=5, n_components=2, min_dist=0.1):
 
     return {
         "topic_ids": topics,
-        "topic_labels": topic_labels  # always dictionary
+        "topic_labels": topic_labels
     }
 
 
