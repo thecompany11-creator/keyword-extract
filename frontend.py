@@ -3,7 +3,7 @@ import tempfile
 import os
 import pandas as pd
 from pathlib import Path
-from bert-final import run_pipeline
+from bert_final import run_pipeline
 
 st.set_page_config(page_title="SEC Filings NLP Pipeline - peak-tech", layout="wide")
 st.title("SEC Filings NLP Pipeline - peak-tech")
